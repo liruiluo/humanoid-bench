@@ -7,7 +7,7 @@ from gymnasium.spaces import Box
 
 from humanoid_bench.tasks import Task
 from humanoid_bench.mjx.flax_to_torch import TorchModel, TorchPolicy
-
+from dm_control.utils import rewards
 
 class Push(Task):
     qpos0_robot = {
@@ -74,6 +74,28 @@ class Push(Task):
         return np.sqrt(np.square(box - self.goal).sum())
 
     def get_reward(self):
+        standing = rewards.tolerance(
+            self.robot.head_height(),
+            bounds=(_STAND_HEIGHT, float("inf")),
+            margin=_STAND_HEIGHT / 4,
+        )
+        upright = rewards.tolerance(
+            self.robot.torso_upright(),
+            bounds=(0.9, float("inf")),
+            sigmoid="linear",
+            margin=1.9,
+            value_at_margin=0,
+        )
+        stand_reward = standing * upright
+        small_control = rewards.tolerance(
+            self.robot.actuator_forces(),
+            margin=10,
+            value_at_margin=0,
+            sigmoid="quadratic",
+        ).mean()
+        small_control = (4 + small_control) / 5
+        stabilization_reward = stand_reward * small_control
+
         goal_dist = self.goal_dist()
         penalty_dist = self.reward_dict["target_dist"] * goal_dist
         reward_success = self.reward_dict["success"] if goal_dist < 0.05 else 0
@@ -91,6 +113,7 @@ class Push(Task):
             "hand_dist": hand_dist,
             "reward_success": reward_success,
             "success": reward_success > 0,
+            "locomotion_reward": stabilization_reward,
         }
         return reward, info
 
