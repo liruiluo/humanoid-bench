@@ -87,7 +87,21 @@ class Powerlift(Task):
             dumbbell_height, bounds=(1.9, 2.1), margin=2
         )
 
-        reward = 0.2 * (small_control * stand_reward) + 0.8 * reward_dumbbell_lifted
+        left_hand_tool_distance = np.linalg.norm(
+            self._env.named.data.site_xpos["left_hand"]
+            - self._env.named.data.geom_xpos["dumbbell"]
+        )
+        right_hand_tool_distance = np.linalg.norm(
+            self._env.named.data.site_xpos["right_hand"]
+            - self._env.named.data.geom_xpos["dumbbell"]
+        )
+        hand_tool_proximity_reward = rewards.tolerance(
+            min(left_hand_tool_distance, right_hand_tool_distance),
+            bounds=(0, 0.2),
+            margin=0.5,
+        )
+
+        reward = 0.2 * (small_control * stand_reward) + 0.8 * reward_dumbbell_lifted + 0.2 * hand_tool_proximity_reward
         return reward, {
             "stand_reward": stand_reward,
             "small_control": small_control,
