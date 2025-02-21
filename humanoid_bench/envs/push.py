@@ -8,6 +8,7 @@ from gymnasium.spaces import Box
 from humanoid_bench.tasks import Task
 from humanoid_bench.mjx.flax_to_torch import TorchModel, TorchPolicy
 from dm_control.utils import rewards
+_STAND_HEIGHT = 1.65
 
 class Push(Task):
     qpos0_robot = {
