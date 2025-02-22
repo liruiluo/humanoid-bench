@@ -28,7 +28,7 @@ defaults:
 
   run:
     script: train
-    steps: 1e7
+    steps: 1e10
     duration: 0
     num_envs: 4
     expl_until: 0
